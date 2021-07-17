@@ -12,19 +12,6 @@ enum class State
 	fire // combustion
 };
 
-//deprecated
-/*
-struct Cell
-{
-	State state;
-	std::vector<sf::Vertex*> quadVertices;
-};
-
-
-bool operator==(const Cell& lhs, const Cell& rhs);
-bool operator!=(const Cell& lhs, const Cell& rhs);
-*/
-
 class Cell
 {
 public:

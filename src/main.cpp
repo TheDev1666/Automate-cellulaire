@@ -4,42 +4,51 @@
 #include <cassert>
 
 #include "Grid.hpp"
+#include "Utils.hpp"
+
+bool isEventHappened(double probability)
+{
+	assert(probability >= 0.0 && probability <= 1.0 && "probability out of range !");
+
+	static std::random_device rnd;
+	static std::mt19937 randomEngine(rnd());
+
+	static std::uniform_real_distribution<> distribution(0, 1);
+
+	return distribution(randomEngine) <= probability;
+}
 
 void transition(Grid& grid)
 {
-	std::random_device rnd;
-	std::mt19937 randomEngine(rnd());
-
-	auto isEventHappened = [&randomEngine](double probability) -> bool 
-	{
-		assert(probability >= 0.0 && probability <= 1.0 && "probability out of range !");
-		std::bernoulli_distribution d(probability);
-		return d(randomEngine);
-	};
-
 	for (std::size_t i = 0; i < (grid.getCellsNumber().x * grid.getCellsNumber().y); ++i)
 	{
 		auto neighbourState = getNeighbourState(grid, grid[i]);
 		switch (grid[i].getState())
 		{
 		case State::youngForest:
-			if (isEventHappened(0.01))
+			if (std::any_of(neighbourState.begin(), neighbourState.end(), [](State elem)-> bool {return elem == State::sparkles; }))
 			{
-				if (std::any_of(neighbourState.begin(), neighbourState.end(), [](State elem)-> bool {return elem == State::sparkles; }))
+				if (isEventHappened(0.01))
 				{
 					grid[i].setState(State::sparkles);
 					grid[i].setColor(sf::Color(255, 255, 0));
 				}
 			}
-			else if (std::any_of(neighbourState.begin(), neighbourState.end(), [](State elem)-> bool {return elem == State::fire; }) && isEventHappened(0.02))
+			else if (std::any_of(neighbourState.begin(), neighbourState.end(), [](State elem)-> bool {return elem == State::fire; }))
 			{
-				grid[i].setState(State::sparkles);
-				grid[i].setColor(sf::Color(255, 255, 0));
+				if (isEventHappened(0.02))
+				{
+					grid[i].setState(State::sparkles);
+					grid[i].setColor(sf::Color(255, 255, 0));
+				}
 			}
-			else if (std::any_of(neighbourState.begin(), neighbourState.end(), [](State elem)-> bool {return elem == State::ember; }) && isEventHappened(0.01))
+			else if (std::any_of(neighbourState.begin(), neighbourState.end(), [](State elem)-> bool {return elem == State::ember; }))
 			{
-				grid[i].setState(State::sparkles);
-				grid[i].setColor(sf::Color(255, 255, 0));
+				if (isEventHappened(0.01))
+				{
+					grid[i].setState(State::sparkles);
+					grid[i].setColor(sf::Color(255, 255, 0));
+				}
 			}
 			else if (isEventHappened(0.005))
 			{
@@ -49,28 +58,37 @@ void transition(Grid& grid)
 			break;
 
 		case State::oldForest:
-			if (std::any_of(neighbourState.begin(), neighbourState.end(), [](State elem)-> bool {return elem == State::sparkles; }) && isEventHappened(0.1))
+			if (std::any_of(neighbourState.begin(), neighbourState.end(), [](State elem)-> bool {return elem == State::sparkles; }))
 			{
-				grid[i].setState(State::sparkles);
-				grid[i].setColor(sf::Color(255, 255, 0));
-			}
-			else if (std::any_of(neighbourState.begin(), neighbourState.end(), [](State elem)-> bool {return elem == State::fire; }) && isEventHappened(0.2))
-			{
-				grid[i].setState(State::sparkles);
-				grid[i].setColor(sf::Color(255, 255, 0));
-			}
-			else if (isEventHappened(0.1))
-			{
-				if (std::any_of(neighbourState.begin(), neighbourState.end(), [](State elem)-> bool {return elem == State::ember; }))
+				if (isEventHappened(0.1))
 				{
 					grid[i].setState(State::sparkles);
 					grid[i].setColor(sf::Color(255, 255, 0));
 				}
 			}
-			else if (std::count(neighbourState.begin(), neighbourState.end(), State::oldForest) >= 5 && isEventHappened(0.00005))
+			else if (std::any_of(neighbourState.begin(), neighbourState.end(), [](State elem)-> bool {return elem == State::fire; }))
 			{
-				grid[i].setState(State::sparkles);
-				grid[i].setColor(sf::Color(255, 255, 0));
+				if (isEventHappened(0.2))
+				{
+					grid[i].setState(State::sparkles);
+					grid[i].setColor(sf::Color(255, 255, 0));
+				}
+			}
+			else if (std::any_of(neighbourState.begin(), neighbourState.end(), [](State elem)-> bool {return elem == State::ember; }))
+			{
+				if (isEventHappened(0.1))
+				{
+					grid[i].setState(State::sparkles);
+					grid[i].setColor(sf::Color(255, 255, 0));
+				}
+			}
+			else if (std::count(neighbourState.begin(), neighbourState.end(), State::oldForest) >= 5)
+			{
+				if (isEventHappened(0.00005))
+				{
+					grid[i].setState(State::sparkles);
+					grid[i].setColor(sf::Color(255, 255, 0));
+				}
 			}
 			break;
 
@@ -112,6 +130,27 @@ void transition(Grid& grid)
 int main()
 {
 	//niveau 2
+
+	/*
+	* Initialisation
+	*/
+
+	showConsole();
+
+	unsigned cellsInWidth;
+	std::cout << "number of cells in width : ";
+	userInput(cellsInWidth, "number of cells in width : ");
+
+	unsigned cellsInHeight;
+	std::cout << "number of cells in height : ";
+	userInput(cellsInHeight, "number of cells in height : ");
+
+	hideConsole();
+
+	/*
+	* Game
+	*/
+
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = 8;
 	
@@ -120,8 +159,8 @@ int main()
 
 	sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Automate Cellulaire de niveau 2", sf::Style::Titlebar | sf::Style::Close, settings);
 
-	window.setFramerateLimit(10);
-	Grid grid(sf::Vector2f(50, 50), sf::Vector2f(700, 700), sf::Vector2u(50, 50));
+	window.setFramerateLimit(30);
+	Grid grid(sf::Vector2f(50, 50), sf::Vector2f(700, 700), sf::Vector2u(cellsInWidth, cellsInHeight), State::ashes);
 
 	while (window.isOpen())
 	{
@@ -134,10 +173,8 @@ int main()
 			}
 		}
 		window.clear();
-		window.draw(grid);
-
 		transition(grid);
-
+		window.draw(grid);
 		window.display();
 	}
 	return 0;
